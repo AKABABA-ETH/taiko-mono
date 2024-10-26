@@ -383,7 +383,7 @@ func (c *Client) GetPoolContent(
 		ctx,
 		l2Head,
 		l1Head.Number,
-		chainConfig.IsOntake(l2Head.Number),
+		chainConfig.IsOntake(new(big.Int).Add(l2Head.Number, common.Big1)),
 		&chainConfig.ProtocolConfigs.BaseFeeConfig,
 		uint64(time.Now().Unix()),
 	)
@@ -508,6 +508,19 @@ func (c *Client) GetProtocolStateVariables(opts *bind.CallOpts) (*struct {
 	opts.Context = ctxWithTimeout
 
 	return GetProtocolStateVariables(c.TaikoL1, opts)
+}
+
+// GetLastVerifiedBlockHash gets the last verified block hash from TaikoL1 contract.
+func (c *Client) GetLastVerifiedBlockHash(ctx context.Context) (common.Hash, error) {
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
+	b, err := c.TaikoL1.GetLastVerifiedBlock(&bind.CallOpts{Context: ctxWithTimeout})
+	if err != nil {
+		return common.Hash{}, err
+	}
+
+	return b.BlockHash, nil
 }
 
 // GetL2BlockInfo fetches the L2 block information from the protocol.

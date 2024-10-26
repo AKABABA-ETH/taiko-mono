@@ -34,6 +34,7 @@ library LibProving {
         bool sameTransition;
         bool postFork;
         uint64 proposedAt;
+        bool isSyncBlock;
     }
 
     /// @notice Emitted when a transition is proved.
@@ -261,7 +262,9 @@ library LibProving {
 
         local.proposedAt = local.postFork ? local.meta.proposedAt : blk.proposedAt;
 
-        if (LibUtils.shouldSyncStateRoot(_config.stateRootSyncInternal, local.blockId)) {
+        local.isSyncBlock =
+            LibUtils.shouldSyncStateRoot(_config.stateRootSyncInternal, local.blockId);
+        if (local.isSyncBlock) {
             local.stateRoot = ctx_.tran.stateRoot;
         }
 
@@ -367,8 +370,9 @@ library LibProving {
 
         local.isTopTier = local.tier.contestBond == 0;
 
-        local.sameTransition =
-            ctx_.tran.blockHash == ts.blockHash && local.stateRoot == ts.stateRoot;
+        local.sameTransition = local.isSyncBlock
+            ? ctx_.tran.blockHash == ts.blockHash && local.stateRoot == ts.stateRoot
+            : ctx_.tran.blockHash == ts.blockHash;
 
         if (local.proof.tier > ts.tier) {
             // Handles the case when an incoming tier is higher than the current transition's tier.
@@ -644,7 +648,7 @@ library LibProving {
 
     /// @dev Returns the reward after applying 12.5% friction.
     function _rewardAfterFriction(uint256 _amount) private pure returns (uint256) {
-        return _amount == 0 ? 0 : (_amount * 7) >> 3;
+        return (_amount * 7) >> 3;
     }
 
     /// @dev Returns if the liveness bond shall be returned.
