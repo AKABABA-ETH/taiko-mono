@@ -12,11 +12,10 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/taikoxyz/taiko-mono/packages/taiko-client/cmd/flags"
-	"github.com/taikoxyz/taiko-mono/packages/taiko-client/internal/utils"
+	pkgFlags "github.com/taikoxyz/taiko-mono/packages/taiko-client/pkg/flags"
 	"github.com/taikoxyz/taiko-mono/packages/taiko-client/pkg/jwt"
 	"github.com/taikoxyz/taiko-mono/packages/taiko-client/pkg/rpc"
-
-	pkgFlags "github.com/taikoxyz/taiko-mono/packages/taiko-client/pkg/flags"
+	"github.com/taikoxyz/taiko-mono/packages/taiko-client/pkg/utils"
 )
 
 // Config contains all configurations to initialize a Taiko proposer.
@@ -24,7 +23,6 @@ type Config struct {
 	*rpc.ClientConfig
 	L1ProposerPrivKey          *ecdsa.PrivateKey
 	L2SuggestedFeeRecipient    common.Address
-	ExtraData                  string
 	ProposeInterval            time.Duration
 	LocalAddresses             []common.Address
 	LocalAddressesOnly         bool
@@ -35,8 +33,9 @@ type Config struct {
 	AllowZeroInterval          uint64
 	MaxProposedTxListsPerEpoch uint64
 	ProposeBlockTxGasLimit     uint64
-	IncludeParentMetaHash      bool
 	BlobAllowed                bool
+	FallbackToCalldata         bool
+	RevertProtectionEnabled    bool
 	TxmgrConfigs               *txmgr.CLIConfig
 	PrivateTxmgrConfigs        *txmgr.CLIConfig
 }
@@ -93,7 +92,6 @@ func NewConfigFromCliContext(c *cli.Context) (*Config, error) {
 		},
 		L1ProposerPrivKey:          l1ProposerPrivKey,
 		L2SuggestedFeeRecipient:    common.HexToAddress(l2SuggestedFeeRecipient),
-		ExtraData:                  c.String(flags.ExtraData.Name),
 		ProposeInterval:            c.Duration(flags.ProposeInterval.Name),
 		LocalAddresses:             localAddresses,
 		LocalAddressesOnly:         c.Bool(flags.TxPoolLocalsOnly.Name),
@@ -104,8 +102,9 @@ func NewConfigFromCliContext(c *cli.Context) (*Config, error) {
 		MaxProposedTxListsPerEpoch: maxProposedTxListsPerEpoch,
 		AllowZeroInterval:          c.Uint64(flags.AllowZeroInterval.Name),
 		ProposeBlockTxGasLimit:     c.Uint64(flags.TxGasLimit.Name),
-		IncludeParentMetaHash:      c.Bool(flags.ProposeBlockIncludeParentMetaHash.Name),
 		BlobAllowed:                c.Bool(flags.BlobAllowed.Name),
+		FallbackToCalldata:         c.Bool(flags.FallbackToCalldata.Name),
+		RevertProtectionEnabled:    c.Bool(flags.RevertProtectionEnabled.Name),
 		TxmgrConfigs: pkgFlags.InitTxmgrConfigsFromCli(
 			c.String(flags.L1WSEndpoint.Name),
 			l1ProposerPrivKey,
